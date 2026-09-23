@@ -1,0 +1,65 @@
+{
+  "task": "Using this Enterprise SaaS Boilerplate (NestJS + Postgres + Redis + Stripe + Angular), build TWO production-grade products in ONE monolith with clean module separation, strong QoS, DevOps, security, and zero AI/LLM features. Apps: (1) ProposalForge – proposal + contract + deposit generator for freelancers/agencies, (2) AgentLead – micro-CRM for real estate agents.",
+  "global_rules": {
+    "architecture": [
+      "Use a SINGLE NestJS modular monolith backend and one Angular frontend.",
+      "Use Postgres 16 as primary database and Redis 7 for caching, queues, and rate limiting.",
+      "Use TypeORM with explicit, versioned migrations for all schema changes.",
+      "Use BullMQ for background jobs (email sending, reminders, nightly summaries).",
+      "RESTful JSON APIs only (and optional WebSockets for dashboards); no microservices, no gRPC.",
+      "Run behind Nginx in production for SSL, gzip, security headers, and upstream health checking."
+    ],
+    "coding_style": [
+      "Use standard NestJS module/controller/service/entity/DTO structure with validation pipes.",
+      "No AI libraries, no prompt/LLM usage, no automatic code generation; everything explicit and testable.",
+      "Encapsulate domain logic in services and pure functions that are easy to unit test.",
+      "Keep TypeScript strict; avoid implicit any and dynamic hacks."
+    ],
+    "testing_qos": [
+      "For every new service, write Jest unit tests covering success, edge cases, and failure paths.",
+      "For every main user flow, add Supertest e2e tests that hit real HTTP endpoints and assert DB changes.",
+      "Run npm run test and npm run test:e2e at the end of each major feature set; fix all failures before moving forward.",
+      "Add at least one k6 or autocannon performance test per app; target P95 < 250ms and P99 < 500ms for key endpoints under realistic load.",
+      "Maintain or increase existing coverage thresholds; do not reduce them."
+    ],
+    "security_fault_tolerance": [
+      "Reuse existing JWT auth (access + refresh) and Stripe integration; guard all tenant-specific routes with owner scoping.",
+      "Apply Redis-backed sliding-window rate limiting to public endpoints (e.g., public proposal/contract views) to avoid abuse.",
+      "Wrap external HTTP calls (if any) with timeouts, limited retries, and opossum-based circuit breakers.",
+      "Use DB transactions for operations that modify multiple related rows (e.g., proposal + contract + invoice state).",
+      "Log all critical failures (queue jobs, email failures, Stripe errors) via structured JSON logs and correlation IDs."
+    ],
+    "ux_branding": [
+      "No AI/robot branding, no flashy gradients; use clean, neutral B2B design.",
+      "Fully responsive layouts: proposals, pipelines, and property views must be usable on mobile.",
+      "Support English UI labels now; design to allow future Arabic localization by keeping copy external to components.",
+      "Create simple word-mark logos (text/SVG) for ProposalForge and AgentLead; do not use AI-generated images."
+    ],
+    "devops": [
+      "Provide Dockerfiles for backend and frontend; docker-compose.yml including Postgres, Redis, Nginx.",
+      "Provide GitHub Actions workflow: lint → unit tests → e2e tests → build → optional deploy.",
+      "All configuration via environment variables; no secrets or endpoint URLs hard-coded in code.",
+      "Expose /health, /ready, and /metrics (Prometheus-style) endpoints for monitoring."
+    ]
+  },
+  "apps": [
+    {
+      "name": "App 7 – ProposalForge (Proposals, Contracts, and Deposits for Freelancers & Agencies)",
+      "market_rationale": "Successful freelancers and boutique agencies convert more deals by sending clean proposals quickly, turning them into signed contracts and upfront deposits. Most currently juggle Google Docs, PDFs, e-sign tools, and separate invoices; a lean tool that bundles proposal → contract → deposit workflow is a proven micro-SaaS pattern.[web:77][web:116][web:119]",
+      "instructions": "Build 'ProposalForge' as a proposal + contract + deposit generator.\n\nTARGET USERS\n- Freelancers and small agencies on Upwork, Fiverr, Khamsat, Nafezly, and direct clients, who want a professional, repeatable workflow for closing projects and collecting deposits.\n\nCORE MODULES\n1) Clients & Contacts (Shared with Boilerplate)\n- Reuse/extend the existing clients module if present, or add:\n  - pf_clients: id, owner_user_id, company_name, contact_name, email, country, timezone, notes, created_at, updated_at.\n- All queries scoped by owner_user_id.\n\n2) Templates & Variables\n- proposal_templates: id, owner_user_id, name, body_markdown, variables JSONB (list of supported placeholders like client_name, project_name, price, start_date).\n- contract_templates: id, owner_user_id, name, body_markdown, variables JSONB.\n- Rendering rules:\n  - Implement a simple template engine: replace {{variable_name}} tokens in markdown with provided values.\n  - Validate that all required variables are supplied before rendering.\n\n3) Proposals & Contracts\n- proposals: id, owner_user_id, client_id, title, scope_markdown, timeline_markdown, price, currency, status='draft'|'sent'|'accepted'|'rejected'|'expired', valid_until_date, created_at, updated_at.\n- contracts: id, proposal_id, body_markdown, client_signature_name_nullable, client_signature_ip_nullable, client_signed_at_nullable, freelancer_signed_at_nullable.\n- Workflow:\n  - From dashboard: create proposal using chosen template + variable input form.\n  - Generate shareable proposal link: /p/:proposalToken.\n  - Client views proposal (read-only), can Accept or Reject.\n  - On Accept: generate contract from template; client signs via signature form (type name + confirm checkbox); store IP and timestamp.\n\n4) Deposits & Payments\n- When proposal is accepted and contract signed:\n  - Use existing Stripe integration to create a Checkout Session for deposit amount (configurable % of price, e.g., 30–50%).\n  - On Stripe webhook success, mark proposal as 'accepted', store deposit_amount, mark payment_status='paid', and attach Stripe session ID.\n- Support manual payment recording: 'bank_transfer', 'cash', etc., with reference field.\n\n5) Pipeline Dashboard\n- Per owner:\n  - Pipeline view showing proposals by status (draft/sent/accepted/rejected/expired).\n  - KPIs: proposals sent this month, win rate, total pipeline value, deposits collected this month.\n  - Filter by client, date range.\n\n6) Public Views & Branding\n- Public proposal view page:\n  - Clean, minimal design; shows proposer logo/name, client name, scope, pricing, CTA to Accept/Reject.\n- Public contract view page after acceptance.\n- SEO-friendly routes for your own landing pages:\n  - /proposalforge, /proposalforge/pricing.\n\nTEST PLAN – APP 7\n- Unit tests:\n  - TemplateService: variable replacement, missing variable detection, injection-safe output (escape or sanitize where needed).\n  - ProposalService: proposal creation, state transitions, expiration logic.\n  - ContractService: contract generation and signature recording.\n  - PaymentService: Stripe session creation, webhook handling, manual payment recording.\n- E2E tests:\n  - Full flow: create client + template + proposal → send → client accepts and signs → Stripe webhook simulated → deposit marked paid → pipeline metrics updated.\n  - Reject flow: client rejects; proposal status updated; cannot sign or pay.\n  - Public routes: valid tokens show views; invalid/expired tokens return 404/410.\n- Frontend tests:\n  - Proposal creation wizard UI with validation.\n  - Public proposal and contract views render correctly and handle Accept/Reject flows.\n  - Dashboard pipeline columns and KPIs render via mocked APIs.\n\nFINISH CRITERIA – APP 7\n- All tests pass (backend + frontend).\n- Seed data: a demo freelancer, 2–3 proposals in different states, one with a signed contract and paid deposit.\n- README section 'ProposalForge' explaining flows and how to use it as a freelancer or agency."
+    },
+    {
+      "name": "App 8 – AgentLead (Real Estate Micro-CRM)",
+      "market_rationale": "Real estate agents often thrive with industry-specific CRMs rather than generic ones. Successful real estate CRMs focus on properties, leads, deals/pipeline, reminders, and basic analytics rather than broad CRM features.[web:108][web:122][web:116] A vertical micro-CRM for agents and small brokerages is a proven SaaS niche.",
+      "instructions": "Build 'AgentLead' as a vertical micro-CRM for real estate agents.\n\nTARGET USERS\n- Independent real estate agents and small broker teams who want to track properties, leads, deals, and commissions, with a clean mobile-friendly interface.\n\nCORE MODULES\n1) Properties\n- properties: id, owner_user_id, title, description, location_text, city, neighborhood_nullable, price, currency, type='rent'|'sale', bedrooms, bathrooms, size_m2, status='available'|'under_offer'|'sold', listed_at, sold_at_nullable, created_at, updated_at.\n- Ability to upload 1–N image URLs (store only URLs/paths; actual file storage can be stubbed for now).\n\n2) Leads & Matching\n- leads: id, owner_user_id, name, phone, email_nullable, preferred_city, preferred_location_text_nullable, budget_min, budget_max, property_type_preference='rent'|'sale'|'both', status='new'|'contacted'|'qualified'|'lost', created_at, updated_at.\n- matching helper:\n  - Suggests properties for a lead based on city, type, and budget range.\n\n3) Deals & Pipeline\n- deals: id, owner_user_id, lead_id, property_id, stage='prospect'|'negotiation'|'offer'|'closed', expected_commission_amount, actual_commission_amount_nullable, closed_at_nullable, created_at, updated_at.\n- tasks: id, owner_user_id, deal_id_nullable, lead_id_nullable, title, due_date, completed_at_nullable, created_at.\n- Pipeline board UI (Kanban-like) by stage.\n\n4) Dashboards & KPIs\n- KPIs for agent:\n  - Active leads by status.\n  - Properties by status (available/under_offer/sold).\n  - Pipeline value (sum of expected_commission_amount for open deals).\n  - Closed commission this month/quarter.\n- Charts:\n  - Deals closed per month.\n  - Conversion funnel: new lead → qualified → deal → closed.\n\n5) Mobile-Optimized UI\n- Property list and deal board must be mobile-friendly:\n  - Simple card views, large tap targets.\n  - Quick actions: call lead, open WhatsApp, schedule task.\n\n6) Minimal Marketing Site\n- Routes:\n  - /agentlead, /agentlead/pricing.\n- Copy: explain that it's a simple CRM for property-focused pipelines (no generic CRM complexity).\n\nTEST PLAN – APP 8\n- Unit tests:\n  - PropertyService: property creation/update, status transitions, price validations.\n  - LeadService: create/update leads, status changes, matching helper for properties.\n  - DealService: deal lifecycle (prospect → negotiation → offer → closed), commission calculations.\n  - TaskService: task creation, completion, due date-based filtering.\n- E2E tests:\n  - Flow: create property + lead → run matching helper → create deal → move through stages → close deal → dashboard KPIs update.\n  - Tasks show up in upcoming view and can be marked complete.\n- Frontend tests:\n  - Property and lead forms validation.\n  - Kanban-style pipeline board interactions (drag/drop or status change controls).\n  - Mobile layout snapshot tests for main views.\n\nFINISH CRITERIA – APP 8\n- All tests pass.\n- Seed data: a demo agent with several properties, leads, and deals in different stages; dashboard shows realistic sample metrics.\n- README 'AgentLead' section with typical workflows and setup notes."
+    }
+  ],
+  "final_steps": [
+    "Implement ProposalForge and AgentLead as clearly separated modules and front-end sections within the same monorepo.",
+    "Ensure that each app has its own navigation entry and routes in the Angular frontend.",
+    "Run the full suite of unit, e2e, and frontend tests, plus basic performance tests for key endpoints.",
+    "Run docker-compose up to validate both apps under Nginx with Postgres and Redis in place.",
+    "Update README with separate sections for ProposalForge and AgentLead, including target users, feature lists, environment variables, and how to run tests.",
+    "Only mark the overall task complete when all tests pass, seed data works, and manual QA of all critical flows is successful."
+  ]
+}

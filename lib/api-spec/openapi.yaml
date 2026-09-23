@@ -1,0 +1,1719 @@
+openapi: 3.1.0
+info:
+  # Do not change the title, if the title changes, the import paths will be broken
+  title: Api
+  version: 0.1.0
+  description: ProposalForge & AgentLead API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: auth
+    description: Authentication
+  - name: pf-clients
+    description: ProposalForge clients
+  - name: pf-proposals
+    description: ProposalForge proposals
+  - name: pf-contracts
+    description: ProposalForge contracts
+  - name: pf-deposits
+    description: ProposalForge deposits
+  - name: pf-dashboard
+    description: ProposalForge dashboard
+  - name: al-properties
+    description: AgentLead properties
+  - name: al-leads
+    description: AgentLead leads
+  - name: al-deals
+    description: AgentLead deals
+  - name: al-reminders
+    description: AgentLead reminders
+  - name: al-dashboard
+    description: AgentLead dashboard
+
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  # ─── AUTH ───────────────────────────────────────────────────────────────────
+
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Log in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  # ─── PF DASHBOARD ────────────────────────────────────────────────────────────
+
+  /pf/dashboard:
+    get:
+      operationId: getPfDashboard
+      tags: [pf-dashboard]
+      summary: ProposalForge dashboard summary
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PfDashboard"
+
+  # ─── PF CLIENTS ───────────────────────────────────────────────────────────────
+
+  /pf/clients:
+    get:
+      operationId: listPfClients
+      tags: [pf-clients]
+      summary: List clients
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PfClient"
+    post:
+      operationId: createPfClient
+      tags: [pf-clients]
+      summary: Create client
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePfClientBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PfClient"
+
+  /pf/clients/{id}:
+    get:
+      operationId: getPfClient
+      tags: [pf-clients]
+      summary: Get client
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PfClient"
+    put:
+      operationId: updatePfClient
+      tags: [pf-clients]
+      summary: Update client
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePfClientBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PfClient"
+    delete:
+      operationId: deletePfClient
+      tags: [pf-clients]
+      summary: Delete client
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── PF PROPOSALS ─────────────────────────────────────────────────────────────
+
+  /pf/proposals:
+    get:
+      operationId: listPfProposals
+      tags: [pf-proposals]
+      summary: List proposals
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [draft, sent, viewed, accepted, rejected]
+        - in: query
+          name: clientId
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PfProposal"
+    post:
+      operationId: createPfProposal
+      tags: [pf-proposals]
+      summary: Create proposal
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePfProposalBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PfProposal"
+
+  /pf/proposals/{id}:
+    get:
+      operationId: getPfProposal
+      tags: [pf-proposals]
+      summary: Get proposal
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PfProposalDetail"
+    put:
+      operationId: updatePfProposal
+      tags: [pf-proposals]
+      summary: Update proposal
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePfProposalBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PfProposalDetail"
+    delete:
+      operationId: deletePfProposal
+      tags: [pf-proposals]
+      summary: Delete proposal
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /pf/proposals/{id}/status:
+    patch:
+      operationId: updatePfProposalStatus
+      tags: [pf-proposals]
+      summary: Update proposal status
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStatusBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PfProposal"
+
+  # ─── PF CONTRACTS ─────────────────────────────────────────────────────────────
+
+  /pf/contracts:
+    get:
+      operationId: listPfContracts
+      tags: [pf-contracts]
+      summary: List contracts
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [draft, sent, signed, cancelled]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PfContract"
+    post:
+      operationId: createPfContract
+      tags: [pf-contracts]
+      summary: Create contract
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePfContractBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PfContract"
+
+  /pf/contracts/{id}:
+    get:
+      operationId: getPfContract
+      tags: [pf-contracts]
+      summary: Get contract
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PfContract"
+    put:
+      operationId: updatePfContract
+      tags: [pf-contracts]
+      summary: Update contract
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePfContractBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PfContract"
+    delete:
+      operationId: deletePfContract
+      tags: [pf-contracts]
+      summary: Delete contract
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /pf/contracts/{id}/status:
+    patch:
+      operationId: updatePfContractStatus
+      tags: [pf-contracts]
+      summary: Update contract status
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStatusBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PfContract"
+
+  # ─── PF DEPOSITS ──────────────────────────────────────────────────────────────
+
+  /pf/deposits:
+    get:
+      operationId: listPfDeposits
+      tags: [pf-deposits]
+      summary: List deposits
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [pending, paid, overdue, cancelled]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PfDeposit"
+    post:
+      operationId: createPfDeposit
+      tags: [pf-deposits]
+      summary: Create deposit
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePfDepositBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PfDeposit"
+
+  /pf/deposits/{id}:
+    get:
+      operationId: getPfDeposit
+      tags: [pf-deposits]
+      summary: Get deposit
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PfDeposit"
+    put:
+      operationId: updatePfDeposit
+      tags: [pf-deposits]
+      summary: Update deposit
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePfDepositBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PfDeposit"
+    delete:
+      operationId: deletePfDeposit
+      tags: [pf-deposits]
+      summary: Delete deposit
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /pf/deposits/{id}/status:
+    patch:
+      operationId: updatePfDepositStatus
+      tags: [pf-deposits]
+      summary: Update deposit status
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStatusBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PfDeposit"
+
+  # ─── AL DASHBOARD ────────────────────────────────────────────────────────────
+
+  /al/dashboard:
+    get:
+      operationId: getAlDashboard
+      tags: [al-dashboard]
+      summary: AgentLead dashboard summary
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlDashboard"
+
+  # ─── AL PROPERTIES ────────────────────────────────────────────────────────────
+
+  /al/properties:
+    get:
+      operationId: listAlProperties
+      tags: [al-properties]
+      summary: List properties
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [available, under_contract, sold, rented, off_market]
+        - in: query
+          name: type
+          schema:
+            type: string
+            enum: [sale, rent]
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AlProperty"
+    post:
+      operationId: createAlProperty
+      tags: [al-properties]
+      summary: Create property
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAlPropertyBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlProperty"
+
+  /al/properties/{id}:
+    get:
+      operationId: getAlProperty
+      tags: [al-properties]
+      summary: Get property
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlProperty"
+    put:
+      operationId: updateAlProperty
+      tags: [al-properties]
+      summary: Update property
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAlPropertyBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlProperty"
+    delete:
+      operationId: deleteAlProperty
+      tags: [al-properties]
+      summary: Delete property
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── AL LEADS ─────────────────────────────────────────────────────────────────
+
+  /al/leads:
+    get:
+      operationId: listAlLeads
+      tags: [al-leads]
+      summary: List leads
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [new, contacted, qualified, lost]
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AlLead"
+    post:
+      operationId: createAlLead
+      tags: [al-leads]
+      summary: Create lead
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAlLeadBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlLead"
+
+  /al/leads/{id}:
+    get:
+      operationId: getAlLead
+      tags: [al-leads]
+      summary: Get lead
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlLead"
+    put:
+      operationId: updateAlLead
+      tags: [al-leads]
+      summary: Update lead
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAlLeadBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlLead"
+    delete:
+      operationId: deleteAlLead
+      tags: [al-leads]
+      summary: Delete lead
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── AL DEALS ─────────────────────────────────────────────────────────────────
+
+  /al/deals:
+    get:
+      operationId: listAlDeals
+      tags: [al-deals]
+      summary: List deals
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: stage
+          schema:
+            type: string
+            enum: [prospect, showing, offer, negotiation, closing, closed_won, closed_lost]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AlDeal"
+    post:
+      operationId: createAlDeal
+      tags: [al-deals]
+      summary: Create deal
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAlDealBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlDeal"
+
+  /al/deals/{id}:
+    get:
+      operationId: getAlDeal
+      tags: [al-deals]
+      summary: Get deal
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlDeal"
+    put:
+      operationId: updateAlDeal
+      tags: [al-deals]
+      summary: Update deal
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAlDealBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlDeal"
+    delete:
+      operationId: deleteAlDeal
+      tags: [al-deals]
+      summary: Delete deal
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /al/deals/{id}/stage:
+    patch:
+      operationId: updateAlDealStage
+      tags: [al-deals]
+      summary: Update deal stage
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStageBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlDeal"
+
+  # ─── AL REMINDERS ─────────────────────────────────────────────────────────────
+
+  /al/reminders:
+    get:
+      operationId: listAlReminders
+      tags: [al-reminders]
+      summary: List reminders
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: done
+          schema:
+            type: boolean
+        - in: query
+          name: upcoming
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AlReminder"
+    post:
+      operationId: createAlReminder
+      tags: [al-reminders]
+      summary: Create reminder
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAlReminderBody"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlReminder"
+
+  /al/reminders/{id}:
+    put:
+      operationId: updateAlReminder
+      tags: [al-reminders]
+      summary: Update reminder
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAlReminderBody"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlReminder"
+    delete:
+      operationId: deleteAlReminder
+      tags: [al-reminders]
+      summary: Delete reminder
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Deleted
+
+  /al/reminders/{id}/done:
+    patch:
+      operationId: markAlReminderDone
+      tags: [al-reminders]
+      summary: Mark reminder as done
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AlReminder"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    # ── Auth ──────────────────────────────────────────────────────────────────
+
+    RegisterBody:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 8
+        name:
+          type: string
+      required: [email, password, name]
+
+    LoginBody:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+      required: [email, password]
+
+    AuthResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/User"
+      required: [token, user]
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, email, name, createdAt]
+
+    UpdateStatusBody:
+      type: object
+      properties:
+        status:
+          type: string
+      required: [status]
+
+    UpdateStageBody:
+      type: object
+      properties:
+        stage:
+          type: string
+      required: [stage]
+
+    # ── ProposalForge ─────────────────────────────────────────────────────────
+
+    PfDashboard:
+      type: object
+      properties:
+        totalClients:
+          type: integer
+        totalProposals:
+          type: integer
+        proposalsByStatus:
+          type: object
+          additionalProperties:
+            type: integer
+        totalRevenuePending:
+          type: number
+        totalRevenueCollected:
+          type: number
+        recentProposals:
+          type: array
+          items:
+            $ref: "#/components/schemas/PfProposal"
+        overdueDeposits:
+          type: integer
+      required: [totalClients, totalProposals, proposalsByStatus, totalRevenuePending, totalRevenueCollected, recentProposals, overdueDeposits]
+
+    PfClient:
+      type: object
+      properties:
+        id:
+          type: string
+        companyName:
+          type: string
+        contactName:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, companyName, contactName, email, createdAt, updatedAt]
+
+    CreatePfClientBody:
+      type: object
+      properties:
+        companyName:
+          type: string
+        contactName:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        address:
+          type: string
+        notes:
+          type: string
+      required: [companyName, contactName, email]
+
+    PfLineItem:
+      type: object
+      properties:
+        id:
+          type: string
+        description:
+          type: string
+        quantity:
+          type: number
+        unitPrice:
+          type: number
+        total:
+          type: number
+      required: [id, description, quantity, unitPrice, total]
+
+    CreatePfLineItemBody:
+      type: object
+      properties:
+        description:
+          type: string
+        quantity:
+          type: number
+        unitPrice:
+          type: number
+      required: [description, quantity, unitPrice]
+
+    PfProposal:
+      type: object
+      properties:
+        id:
+          type: string
+        clientId:
+          type: string
+        clientName:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+          enum: [draft, sent, viewed, accepted, rejected]
+        totalAmount:
+          type: number
+        currency:
+          type: string
+        validUntil:
+          type: string
+          format: date
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, clientId, clientName, title, status, totalAmount, currency, createdAt, updatedAt]
+
+    PfProposalDetail:
+      allOf:
+        - $ref: "#/components/schemas/PfProposal"
+        - type: object
+          properties:
+            lineItems:
+              type: array
+              items:
+                $ref: "#/components/schemas/PfLineItem"
+            client:
+              $ref: "#/components/schemas/PfClient"
+          required: [lineItems]
+
+    CreatePfProposalBody:
+      type: object
+      properties:
+        clientId:
+          type: string
+        title:
+          type: string
+        currency:
+          type: string
+        validUntil:
+          type: string
+          format: date
+        notes:
+          type: string
+        lineItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/CreatePfLineItemBody"
+      required: [clientId, title, currency, lineItems]
+
+    PfContract:
+      type: object
+      properties:
+        id:
+          type: string
+        proposalId:
+          type: string
+        clientId:
+          type: string
+        clientName:
+          type: string
+        title:
+          type: string
+        status:
+          type: string
+          enum: [draft, sent, signed, cancelled]
+        content:
+          type: string
+        signedAt:
+          type: string
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, clientId, clientName, title, status, content, createdAt, updatedAt]
+
+    CreatePfContractBody:
+      type: object
+      properties:
+        proposalId:
+          type: string
+        clientId:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+      required: [clientId, title, content]
+
+    PfDeposit:
+      type: object
+      properties:
+        id:
+          type: string
+        proposalId:
+          type: string
+        contractId:
+          type: string
+        clientId:
+          type: string
+        clientName:
+          type: string
+        title:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        status:
+          type: string
+          enum: [pending, paid, overdue, cancelled]
+        dueDate:
+          type: string
+          format: date
+        paidAt:
+          type: string
+          format: date-time
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, clientId, clientName, title, amount, currency, status, dueDate, createdAt, updatedAt]
+
+    CreatePfDepositBody:
+      type: object
+      properties:
+        proposalId:
+          type: string
+        contractId:
+          type: string
+        clientId:
+          type: string
+        title:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        dueDate:
+          type: string
+          format: date
+        notes:
+          type: string
+      required: [clientId, title, amount, currency, dueDate]
+
+    # ── AgentLead ─────────────────────────────────────────────────────────────
+
+    AlDashboard:
+      type: object
+      properties:
+        totalProperties:
+          type: integer
+        totalLeads:
+          type: integer
+        totalDeals:
+          type: integer
+        dealsByStage:
+          type: object
+          additionalProperties:
+            type: integer
+        totalPipelineValue:
+          type: number
+        totalCommissionPotential:
+          type: number
+        upcomingReminders:
+          type: array
+          items:
+            $ref: "#/components/schemas/AlReminder"
+        recentLeads:
+          type: array
+          items:
+            $ref: "#/components/schemas/AlLead"
+      required: [totalProperties, totalLeads, totalDeals, dealsByStage, totalPipelineValue, totalCommissionPotential, upcomingReminders, recentLeads]
+
+    AlProperty:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        locationText:
+          type: string
+        city:
+          type: string
+        neighborhood:
+          type: string
+        price:
+          type: number
+        currency:
+          type: string
+        type:
+          type: string
+          enum: [sale, rent]
+        bedrooms:
+          type: integer
+        bathrooms:
+          type: integer
+        sizeM2:
+          type: number
+        status:
+          type: string
+          enum: [available, under_contract, sold, rented, off_market]
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, title, locationText, city, price, currency, type, status, createdAt, updatedAt]
+
+    CreateAlPropertyBody:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        locationText:
+          type: string
+        city:
+          type: string
+        neighborhood:
+          type: string
+        price:
+          type: number
+        currency:
+          type: string
+        type:
+          type: string
+          enum: [sale, rent]
+        bedrooms:
+          type: integer
+        bathrooms:
+          type: integer
+        sizeM2:
+          type: number
+        status:
+          type: string
+          enum: [available, under_contract, sold, rented, off_market]
+        notes:
+          type: string
+      required: [title, locationText, city, price, currency, type, status]
+
+    AlLead:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        source:
+          type: string
+        status:
+          type: string
+          enum: [new, contacted, qualified, lost]
+        budget:
+          type: number
+        currency:
+          type: string
+        interestedInType:
+          type: string
+          enum: [sale, rent, both]
+        preferredCity:
+          type: string
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, name, status, createdAt, updatedAt]
+
+    CreateAlLeadBody:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+        phone:
+          type: string
+        source:
+          type: string
+        status:
+          type: string
+          enum: [new, contacted, qualified, lost]
+        budget:
+          type: number
+        currency:
+          type: string
+        interestedInType:
+          type: string
+          enum: [sale, rent, both]
+        preferredCity:
+          type: string
+        notes:
+          type: string
+      required: [name, status]
+
+    AlDeal:
+      type: object
+      properties:
+        id:
+          type: string
+        leadId:
+          type: string
+        leadName:
+          type: string
+        propertyId:
+          type: string
+        propertyTitle:
+          type: string
+        title:
+          type: string
+        stage:
+          type: string
+          enum: [prospect, showing, offer, negotiation, closing, closed_won, closed_lost]
+        dealValue:
+          type: number
+        currency:
+          type: string
+        commissionRate:
+          type: number
+        commissionAmount:
+          type: number
+        expectedCloseDate:
+          type: string
+          format: date
+        closedAt:
+          type: string
+          format: date-time
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required: [id, title, stage, dealValue, currency, createdAt, updatedAt]
+
+    CreateAlDealBody:
+      type: object
+      properties:
+        leadId:
+          type: string
+        propertyId:
+          type: string
+        title:
+          type: string
+        stage:
+          type: string
+          enum: [prospect, showing, offer, negotiation, closing, closed_won, closed_lost]
+        dealValue:
+          type: number
+        currency:
+          type: string
+        commissionRate:
+          type: number
+        expectedCloseDate:
+          type: string
+          format: date
+        notes:
+          type: string
+      required: [title, stage, dealValue, currency]
+
+    AlReminder:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        dueAt:
+          type: string
+          format: date-time
+        done:
+          type: boolean
+        leadId:
+          type: string
+        dealId:
+          type: string
+        propertyId:
+          type: string
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required: [id, title, dueAt, done, createdAt]
+
+    CreateAlReminderBody:
+      type: object
+      properties:
+        title:
+          type: string
+        dueAt:
+          type: string
+          format: date-time
+        leadId:
+          type: string
+        dealId:
+          type: string
+        propertyId:
+          type: string
+        notes:
+          type: string
+      required: [title, dueAt]
